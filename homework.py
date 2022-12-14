@@ -141,8 +141,8 @@ def main():
         format='%(asctime)s, %(levelname)s, %(message)s',
         handlers=[logging.FileHandler('log.txt')]
     )
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
     if check_tokens():
+        bot = telegram.Bot(token=TELEGRAM_TOKEN)
         timestamp = int(time.time() - 1814400)
         first_status = ''
         while True:
