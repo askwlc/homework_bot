@@ -45,7 +45,7 @@ def check_tokens():
         return False
 
     if not TELEGRAM_CHAT_ID:
-        logger.critical('Отсутствует телеграм: "TELEGRAM_CHAT_ID"')
+        logger.critical('Отсутствует телеграм id: "TELEGRAM_CHAT_ID"')
         return False
 
     for token in tokens:
