@@ -79,7 +79,7 @@ def get_api_answer(timestamp):
             'Неверный код ответа API'
         )
     return homework_statuses.json()
-        
+
 
 def check_response(response):
     """Проверяет ответ API на соответствие документации."""
