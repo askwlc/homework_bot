@@ -65,7 +65,6 @@ def send_message(bot, message):
 
 def get_api_answer(timestamp):
     """Делает запрос к эндпоинту API-сервиса."""
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
     payload = {'from_date': timestamp}
     try:
         homework_statuses = requests.get(
@@ -73,17 +72,14 @@ def get_api_answer(timestamp):
             headers=HEADERS,
             params=payload,
         )
-        status = homework_statuses.status_code
-        if status == HTTPStatus.OK:
-            return homework_statuses.json()
-        else:
-            logging.error('Ошибка запроса')
-            send_message(bot, 'Ошибка запроса')
-            raise ValueError(homework_statuses.json())
-    except Exception:
-        logging.error('Сбой в работе эндпоинта')
-        raise ValueError('Сбой в работе эндпоинта')
-
+    except requests.exceptions.RequestException as error:
+        raise Exception(f'Ошибка при запросе к API: {error}')
+    if homework_statuses.status_code != HTTPStatus.OK:
+        raise requests.exceptions.StatusCodeException(
+            'Неверный код ответа API'
+        )
+    return homework_statuses.json()
+        
 
 def check_response(response):
     """Проверяет ответ API на соответствие документации."""
