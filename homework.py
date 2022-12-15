@@ -51,7 +51,6 @@ def check_tokens():
     for token in tokens:
         if os.getenv(token) is None:
             logger.critical(f'Отсутствует переменная: {token}')
-            raise Exception(f'Отсутствует переменная: {token}')
     return True
 
 
