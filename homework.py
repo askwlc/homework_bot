@@ -2,6 +2,7 @@ import logging
 import os
 import time
 from http import HTTPStatus
+import json
 
 import requests
 import telegram
@@ -17,6 +18,7 @@ TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 logger = logging.getLogger(__name__)
 
 RETRY_PERIOD = 600
+UTIME_START_CHECK = 1814400
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -58,9 +60,10 @@ def send_message(bot, message):
     """Отправка сообщений ботом в телеграмм."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
-        logging.debug('Бот отправил сообщение в чат')
-    except Exception:
-        logging.error('Сбой при отправке сообщения в чат')
+        logger.debug('Бот отправил сообщение в чат')
+    except telegram.error.TelegramError as error:
+        logger.error(f'Сбой при отправке сообщения в чат - {error}')
+        raise Exception(error)
 
 
 def get_api_answer(timestamp):
@@ -78,26 +81,26 @@ def get_api_answer(timestamp):
         raise requests.exceptions.StatusCodeException(
             'Неверный код ответа API'
         )
-    return homework_statuses.json()
+    try:
+        return homework_statuses.json()
+    except json.decoder.JSONDecodeError:
+        raise Exception('Ответ не преобразован в json')    
 
 
 def check_response(response):
     """Проверяет ответ API на соответствие документации."""
-    if isinstance(response, dict) is False:
+    if isinstance(response, dict) == False:
         logging.error('Данные получены не в виде словаря')
         raise TypeError
     if 'homeworks' not in response:
         logging.error('Нет ключа homeworks')
         raise KeyError
-    if isinstance(response['homeworks'], list) is False:
+    if isinstance(response['homeworks'], list) == False:
         logging.error('Данные переданы не в виде списка')
         raise TypeError
     if 'current_date'not in response:
         logging.error('Отсутствует ожидаемый ключ current_date в ответе API')
         raise KeyError
-    if type(response) is None:
-        logging.error('Данные получены с типом None')
-        raise TypeError
 
 
 def parse_status(homework):
@@ -138,7 +141,7 @@ def main():
     )
     if check_tokens():
         bot = telegram.Bot(token=TELEGRAM_TOKEN)
-        timestamp = int(time.time() - 1814400)
+        timestamp = int(time.time() - UTIME_START_CHECK)
         first_status = ''
         while True:
             try:
