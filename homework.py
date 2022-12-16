@@ -119,32 +119,22 @@ def parse_status(homework):
 
 def main():
     """Основная логика работы бота."""
-    logging.basicConfig(
-        format='%(asctime)s, %(levelname)s, %(message)s',
-        handlers=[logging.FileHandler('log.txt')]
-    )
-    if not check_tokens():
-        logging.critical('Токены не существуют')
-        sys.exit()
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    timestamp = 0
-    last_message = ''
-    while True:
-        try:
-            response = get_api_answer(timestamp)
-            homeworks = check_response(response)
-            if homeworks[0]:
-                message = parse_status(homeworks[0])
-                if message != last_message:
-                    send_message(bot, message)
-        except Exception as error:
-            logging.error = f'Сбой в работе программы: {error}'
-            message = f'Сбой в работе программы: {error}'
-            if message != last_message:
+    if check_tokens():
+        bot = telegram.Bot(token=TELEGRAM_TOKEN)
+        timestamp = int(time.time() - UTIME_START_CHECK)
+        first_status = ''
+        while True:
+            try:
+                response = get_api_answer(timestamp)
+                check_response(response)
+                new_status = parse_status(response['homeworks'][0])
+                if new_status != first_status:
+                    send_message(bot, new_status)
+                first_status = new_status
+            except Exception as error:
+                message = f'Сбой в работе программы: {error}'
+                logging.error(message)
                 send_message(bot, message)
-        finally:
-            last_message = message
-            timestamp = int(time.time())
             time.sleep(RETRY_PERIOD)
 
 
