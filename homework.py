@@ -89,48 +89,32 @@ def get_api_answer(timestamp):
 
 def check_response(response):
     """Проверяет ответ API на соответствие документации."""
-    if isinstance(response, dict) == False:
-        logging.error('Данные получены не в виде словаря')
+    if not isinstance(response, dict):
+        logger.error('Данные получены не в виде словаря')
         raise TypeError
     if 'homeworks' not in response:
-        logging.error('Нет ключа homeworks')
+        logger.error('Нет ключа homeworks')
         raise KeyError
-    if isinstance(response['homeworks'], list) == False:
-        logging.error('Данные переданы не в виде списка')
+    if not isinstance(response['homeworks'], list):
+        logger.error('Данные переданы не в виде списка')
         raise TypeError
-    if 'current_date'not in response:
-        logging.error('Отсутствует ожидаемый ключ current_date в ответе API')
-        raise KeyError
+    if not response.get('homeworks'):
+        raise IndexError('Список работ пуст')
+    return response.get('homeworks')
+
 
 
 def parse_status(homework):
     """Извлекает статус домашней работы."""
     try:
         homework_name = str(homework['homework_name'])
-    except Exception:
-        logging.error('Не удалось узнать название работы')
-    try:
-        homework_status = homework['status']
-    except Exception:
-        logging.error('Не удалось узнать статус работы')
-    if homework_status == 'approved':
-        verdict = str(HOMEWORK_VERDICTS[homework_status])
-        return str(
-            f'Изменился статус проверки работы "{homework_name}". {verdict}'
-        )
-    elif homework_status == 'reviewing':
-        verdict = str(HOMEWORK_VERDICTS[homework_status])
-        return str(
-            f'Изменился статус проверки работы "{homework_name}". {verdict}'
-        )
-    elif homework_status == 'rejected':
-        verdict = str(HOMEWORK_VERDICTS[homework_status])
-        return str(
-            f'Изменился статус проверки работы "{homework_name}". {verdict}'
-        )
-    else:
-        logging.error('Не обнаружен статус домашней робаты')
-        raise KeyError
+    except KeyError:
+        raise KeyError('Ошибка ключа "homework_name"')
+    if homework['status'] not in HOMEWORK_VERDICTS:
+        raise KeyError('Статус не найден')
+    if homework['status'] in HOMEWORK_VERDICTS:
+        verdict = str(HOMEWORK_VERDICTS[homework['status']])
+        return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def main():
@@ -139,22 +123,28 @@ def main():
         format='%(asctime)s, %(levelname)s, %(message)s',
         handlers=[logging.FileHandler('log.txt')]
     )
-    if check_tokens():
-        bot = telegram.Bot(token=TELEGRAM_TOKEN)
-        timestamp = int(time.time() - UTIME_START_CHECK)
-        first_status = ''
-        while True:
-            try:
-                response = get_api_answer(timestamp)
-                check_response(response)
-                new_status = parse_status(response['homeworks'][0])
-                if new_status != first_status:
-                    send_message(bot, new_status)
-                first_status = new_status
-            except Exception as error:
-                message = f'Сбой в работе программы: {error}'
-                logging.error(message)
+    if not check_tokens():
+        logging.critical('Токены не существуют')
+        sys.exit()
+    bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    timestamp = 0
+    last_message = ''
+    while True:
+        try:
+            response = get_api_answer(timestamp)
+            homeworks = check_response(response)
+            if homeworks[0]:
+                message = parse_status(homeworks[0])
+                if message != last_message:
+                    send_message(bot, message)
+        except Exception as error:
+            logging.error = f'Сбой в работе программы: {error}'
+            message = f'Сбой в работе программы: {error}'
+            if message != last_message:
                 send_message(bot, message)
+        finally:
+            last_message = message
+            timestamp = int(time.time())
             time.sleep(RETRY_PERIOD)
 
 
