@@ -84,7 +84,7 @@ def get_api_answer(timestamp):
     try:
         return homework_statuses.json()
     except json.decoder.JSONDecodeError:
-        raise Exception('Ответ не преобразован в json')    
+        raise Exception('Ответ не преобразован в json')
 
 
 def check_response(response):
@@ -101,7 +101,6 @@ def check_response(response):
     if not response.get('homeworks'):
         raise IndexError('Список работ пуст')
     return response.get('homeworks')
-
 
 
 def parse_status(homework):
