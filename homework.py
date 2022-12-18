@@ -109,7 +109,8 @@ def parse_status(homework):
         homework_name = str(homework['homework_name'])
     except KeyError:
         raise KeyError('Ошибка ключа "homework_name"')
-    if homework['status'] not in HOMEWORK_VERDICTS:
+    status = homework.get('status')
+    if status not in HOMEWORK_VERDICTS:
         raise KeyError('Статус не найден')
     if homework['status'] in HOMEWORK_VERDICTS:
         verdict = str(HOMEWORK_VERDICTS[homework['status']])
